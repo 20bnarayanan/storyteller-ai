@@ -1,0 +1,36 @@
+digraph storytime {
+  rankdir=TB; fontname="Helvetica"; nodesep=0.4; ranksep=0.45;
+  node [fontname="Helvetica", fontsize=11, style="filled,rounded", shape=box, fillcolor="#f4f1ea", color="#555555"];
+  edge [fontname="Helvetica", fontsize=10, color="#555555"];
+  user [label="User request\npremise, age, interests, mood, length", shape=oval, fillcolor="#dbe9f6"];
+  planner [label="PLANNER · Claude Haiku 5.5\nPLANNER_SYSTEM prompt\n5-beat outline, world rules, vocabulary, fading refrain", fillcolor="#fde9c9"];
+  blueprint [label="Python blueprint validation\nchecks refrain, vocabulary, title and story structure", shape=diamond, fillcolor="#e6e6e6"];
+  writer [label="STORYTELLER × 2 drafts in parallel · Claude Haiku 5.5\nSTORYTELLER_SYSTEM prompt\nwrites complete story with refrain markers", fillcolor="#fde9c9"];
+  validators [label="PYTHON VALIDATORS (run on each draft)\nhard: refrain markers, length bounds\nsoft (advice to judge): vocabulary, lead-ins, repetition, wind-down", shape=diamond, fillcolor="#e6e6e6"];
+  repair [label="ONE REPAIR per draft (not counted as the revision)\nre-ask for missing markers, or fix length;\nif markers are still wrong, code places them", fillcolor="#fde9c9"];
+  trim [label="TRIM, only if over 5% above the word cap\none cut-only rewrite; kept only if shorter and still valid", fillcolor="#fde9c9"];
+  judge [label="LLM JUDGE · Claude Haiku 5.5 · one call per draft\nJUDGE_SYSTEM + 8 pass/fail checks\nquoted evidence + one concrete fix per failure\n(re-judging a rewrite sees its earlier verdicts)", fillcolor="#f9d3d3"];
+  gate [label="PYTHON QUALITY GATE\n≥ 6 of 8 checks, no critical failure\n(hero solves problem, calm ending)\nnothing unsafe, not far over word target", shape=diamond, fillcolor="#e6e6e6"];
+  revision [label="ONE TARGETED REVISION (budget: 1)\ntop 3 fixes + strengths to preserve, must not add length\n(if only refrain markers are missing: cheap marker-only repair)", fillcolor="#fde9c9"];
+  pick [label="Keep the better draft\n(most checks passed; ties keep draft A)", shape=diamond, fillcolor="#e6e6e6"];
+  best [label="Best valid candidate\ndraft or revised draft", fillcolor="#f4f1ea"];
+  format [label="PRESENTATION · Python\nsubstitute fading refrain, highlight vocabulary, footer lists only words used + discussion question", fillcolor="#d9efd9"];
+  output [label="Final bedtime story\noptional trace.json", shape=oval, fillcolor="#dbe9f6"];
+  controller [label="pipeline.py owns orchestration\nllm_client.py handles Anthropic API and usage tracking", shape=note, fillcolor="#ffffff"];
+  user -> planner -> blueprint;
+  blueprint -> planner [label="invalid: repair prompt"];
+  blueprint -> writer [label="valid"];
+  writer -> validators;
+  validators -> repair [label="hard check failed"];
+  validators -> trim [label="hard checks ok"];
+  repair -> trim [label="no second validation loop"];
+  trim -> judge;
+  judge -> pick [label="both drafts"];
+  pick -> gate;
+  gate -> format [label="passes"];
+  gate -> revision [label="fails; one revision maximum"];
+  revision -> judge [label="re-judge"];
+  gate -> best [label="revision exhausted"];
+  best -> format -> output;
+  controller -> planner [style=dashed, arrowhead=none];
+}
